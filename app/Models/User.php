@@ -5,9 +5,12 @@ class User
 {
   public function find($id)
   {
-    return [
-      'id' => '1',
-      'name' => 'YK',
-    ];
+    $db = new \PDO("mysql:host=localhost;dbname=mvcrouterpractice", "root", "");
+    $stmt = $db->prepare("SELECT id, name FROM users WHERE id = ?");
+    $stmt->bindValue(1, $id);
+    $stmt->execute();
+    $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+    return $result[0];
   }
 }

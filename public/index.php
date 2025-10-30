@@ -16,17 +16,22 @@ print_r($requestUri);
 print'</pre>';
 
 // クエリ文字列を除去してパス部分だけを抽出
-// $path = parse_url($requestUri, PHP_URL_PATH);
-$path = $requestUri;
+$path = parse_url($requestUri, PHP_URL_PATH);
+// $path = $requestUri;
+print'<pre>';
+print_r($path);
+print'</pre>';
+
+$path = trim($path, '/');
 print'<pre>';
 print_r($path);
 print'</pre>';
 
 // パスをスラッシュで分割して配列にする
-$pathParts = explode('/', trim($path, '/'));
-print'<pre>';
-print_r($pathParts);
-print'</pre>';
+// $pathParts = explode('/', trim($path, '/'));
+// print'<pre>';
+// print_r($pathParts);
+// print'</pre>';
 
 // 例：/user/profileにアクセスした場合
 // $pathPartsは['user', 'profile']となる
@@ -40,6 +45,57 @@ print'<pre>';
 print_r($routes);
 print'</pre>';
 
+$foundRoute = false;
+$params = [];
+
+// ルート定義をループしてマッチング
+foreach ($routes as $routePattern => $routeInfo) {
+  // ルート定義のパターンを正規表現に変換
+  // 例: 'user/profile/{id}' -> '^user\/profile\/([0-9]+)$'
+  $regexPattern = preg_replace('/\{([a-z0-9]+)\}/', '([0-9]+)', str_replace('/', '\/', $routePattern));
+
+  // パスの末尾にスラッシュがない場合を考慮
+  $regexPattern = '/^' . $regexPattern . '$/';
+
+  // 正規表現でマッチングを試みる
+  if (preg_match($regexPattern, $path, $matches)) {
+    $controllerName = $routeInfo['controller'];
+    $actionName = $routeInfo['action'];
+
+    // パラメータを抽出（matches配列の1番目以降がパラメータ）
+    array_shift($matches);  // 0番目の要素（全体マッチ）を削除
+    $params = $matches;
+
+    $foundRoute = true;
+    break;
+  }
+}
+
+if ($foundRoute) {
+  // コントローラーを実行（パラメータを渡す）
+  $controllerClassName = $controllerName . 'Controller';
+  $controllerFile = __DIR__ . '/../app/Controllers/' . $controllerClassName . '.php';
+
+  if (file_exists($controllerFile)) {
+    require_once $controllerFile;
+    $controller = new $controllerClassName();
+
+    // アクションを実行し、抽出したIDを引数として渡す
+    if (method_exists($controller, $actionName)) {
+      $controller->$actionName(...$params); // 可変引数でパラメータを渡す
+    } else {
+      header("HTTP/1.0 404 Not Found");
+      echo "404 Not Found (Action)";
+    }
+  } else {
+    header("HTTP/1.0 404 Not Found");
+    echo "404 Not Found (Controller)";
+  }
+} else {
+  header("HTTP/1.0 404 Not Found");
+  echo "404 Not Found";
+}
+exit();
 // パスを文字列に再結合（例：'user/profile'）
 $routeKey = implode('/', $pathParts);
 if (empty($routeKey)) {

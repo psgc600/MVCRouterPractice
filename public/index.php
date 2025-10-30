@@ -3,6 +3,11 @@
  * このファイルがドキュメントルートになるようにhttpd.confを設定してください。
  */
 
+spl_autoload_register(function($class) {
+  echo "<div>[debug]Want to load $class.</div>";
+  require __DIR__ . "/../app/Controllers/{$class}.php";
+});
+
 // ユーザーからのリクエストURIを取得し、解析する
 // リクエストURIを取得（例：/user/profile）
 $requestUri = $_SERVER['REQUEST_URI'];
@@ -65,7 +70,7 @@ echo "<div>[debug]コントローラーファイル{$controllerFile}を探しま
 // コントローラーファイルを読み込み
 if (file_exists($controllerFile)) {
   echo "<div>[debug]コントローラファイルがあります。インクルードします</div>";
-  require_once $controllerFile;
+  // require_once $controllerFile;
 
   // コントローラーのインスタンスを生成
   $controller = new $controllerClassName();
